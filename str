@@ -1,0 +1,32 @@
+IP_ADDR  = '192.168.12.81'
+USERNAME = 'root'
+PASSWORD = 'yourpassword'
+LOG_FILE = 'D:\results.txt'
+
+COMMAND = IP_ADDR
+strconcat COMMAND ':22 /ssh /2 /auth=password /user='
+strconcat COMMAND USERNAME
+strconcat COMMAND ' /passwd='
+strconcat COMMAND PASSWORD
+strconcat COMMAND ' /nosecuritywarning'
+
+connect COMMAND
+
+if result <> 2 then
+    messagebox 'error' 'Error'
+    end
+endif
+
+logopen LOG_FILE 0 0
+timeout = 10
+
+wait 'Storage Server Configuration UI'
+send '6'
+wait 'Utilities'
+send '8'
+pause 1 
+sendln 'storcli /call /eall /sall show all'
+pause 6
+
+logclose
+closett
