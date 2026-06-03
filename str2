@@ -1,43 +1,64 @@
-IP_ADDR  = '192.168.12.81'
-USERNAME = 'root'
-PASSWORD = 'yourpassword'
-LOG_FILE = 'D:\results.txt'
+; ============================================================
+; 1. 變數設定區
+; ============================================================
+IP_ADDR[空格]=[空格]'192.168.12.81'
+USERNAME[空格]=[空格]'root'
+PASSWORD[空格]=[空格]'yourpassword'
 
-; 1. 預先清除舊有的接收緩衝
-clearscreen 0
+; 修正 D 槽路徑
+RAW_LOG_PATH[空格]=[空格]'D:\\results.txt' 
+strspecial[空格]LOG_FILE[空格]RAW_LOG_PATH
 
-; 2. 使用雙引號確保參數完整性 (針對密碼含空格情況)
-COMMAND = IP_ADDR
-strconcat COMMAND ':22 /ssh /2 /auth=password /user='
-strconcat COMMAND USERNAME
-strconcat COMMAND ' /passwd='
-strconcat COMMAND PASSWORD
-strconcat COMMAND ' /nosecuritywarning'
+; ============================================================
+; 2. 組裝連線指令 (這裡最容易因為少空格而 Authentication Error)
+; ============================================================
+COMMAND[空格]=[空格]IP_ADDR
+; 注意：:22 後面接著一個空格
+strconcat[空格]COMMAND[空格]':22[空格]/ssh[空格]/2[空格]/auth=password[空格]/user='
+strconcat[空格]COMMAND[空格]USERNAME
 
-connect COMMAND
+; 注意：/passwd 前面必須有一個空格
+strconcat[空格]COMMAND[空格]'[空格]/passwd='
+strconcat[空格]COMMAND[空格]PASSWORD
 
-; 3. 增加連線後的微小停頓，讓 SSH 握手完成
-pause 1
+; 注意：/nosecuritywarning 前面必須有一個空格
+strconcat[空格]COMMAND[空格]'[空格]/nosecuritywarning'
 
-if result <> 2 then
-    messagebox '連線啟動失敗' 'Error'
-    end
+; ============================================================
+; 3. 執行連線與驗證
+; ============================================================
+connect[空格]COMMAND
+
+if[空格]result[空格]<>[空格]2[空格]then
+[空格][空格][空格][空格]messagebox[空格]'無法發起連線'[空格]'Error'
+[空格][空格][空格][空格]end
 endif
 
-; 4. 不要直接 logopen，先用 wait 確認真的進去了
-timeout = 5
-; 同時等待多種可能的提示符號
-wait '#' '>' '$' 'Password:' 
+; 等待登入成功的符號
+timeout[空格]=[空格]10
+wait[空格]'#'[空格]'>'[空格]'$'
 
-; 如果看到 'Password:' 代表自動登入失敗，停在手動輸入畫面
-if strscan inputstr 'Password:' > 0 then
-    messagebox '自動登入失敗，請檢查密碼格式或特殊字元' 'Auth Error'
-    end
-elseif result = 0 then
-    messagebox '登入超時，可能被防火牆阻擋或 SSH Key 沒確認' 'Timeout'
-    end
+if[空格]result[空格]=[空格]0[空格]then
+[空格][空格][空格][空格]messagebox[空格]'認證失敗！請檢查帳密或空格位置'[空格]'Auth Error'
+[空格][空格][空格][空格]end
 endif
 
-; 到這裡才代表真正認證成功
-logopen LOG_FILE 0 0
-; ... 後續指令 ...
+; ============================================================
+; 4. 執行任務
+; ============================================================
+logopen[空格]LOG_FILE[空格]0[空格]0
+pause[空格]1
+
+wait[空格]'Storage Server Configuration UI'
+sendln[空格]'6'
+
+wait[空格]'Utilities'
+sendln[空格]'8'
+pause[空格]2
+
+sendln[空格]'storcli /call /eall /sall show all'
+
+pause[空格]10
+
+logclose
+closett
