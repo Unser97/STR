@@ -1,0 +1,43 @@
+IP_ADDR  = '192.168.12.81'
+USERNAME = 'root'
+PASSWORD = 'yourpassword'
+LOG_FILE = 'D:\results.txt'
+
+; 1. 預先清除舊有的接收緩衝
+clearscreen 0
+
+; 2. 使用雙引號確保參數完整性 (針對密碼含空格情況)
+COMMAND = IP_ADDR
+strconcat COMMAND ':22 /ssh /2 /auth=password /user='
+strconcat COMMAND USERNAME
+strconcat COMMAND ' /passwd='
+strconcat COMMAND PASSWORD
+strconcat COMMAND ' /nosecuritywarning'
+
+connect COMMAND
+
+; 3. 增加連線後的微小停頓，讓 SSH 握手完成
+pause 1
+
+if result <> 2 then
+    messagebox '連線啟動失敗' 'Error'
+    end
+endif
+
+; 4. 不要直接 logopen，先用 wait 確認真的進去了
+timeout = 5
+; 同時等待多種可能的提示符號
+wait '#' '>' '$' 'Password:' 
+
+; 如果看到 'Password:' 代表自動登入失敗，停在手動輸入畫面
+if strscan inputstr 'Password:' > 0 then
+    messagebox '自動登入失敗，請檢查密碼格式或特殊字元' 'Auth Error'
+    end
+elseif result = 0 then
+    messagebox '登入超時，可能被防火牆阻擋或 SSH Key 沒確認' 'Timeout'
+    end
+endif
+
+; 到這裡才代表真正認證成功
+logopen LOG_FILE 0 0
+; ... 後續指令 ...
